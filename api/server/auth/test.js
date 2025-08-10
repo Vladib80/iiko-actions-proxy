@@ -1,10 +1,10 @@
-import crypto from "node:crypto";
+import crypto from "crypto";
 import { makeHttp, mask, ensureBridgeKeyNode } from "../../../lib/http.js";
 
 export default async function handler(req, res) {
   if (!ensureBridgeKeyNode(req, res)) return;
 
-  const base = (process.env.IIKO_SERVER_BASE_URL || "").replace(/\\/+$/, "");
+  const base = (process.env.IIKO_SERVER_BASE_URL || "").replace(/\/+$/, "");
   const login = process.env.IIKO_SERVER_LOGIN || "";
   const password = process.env.IIKO_SERVER_PASSWORD || "";
   const http = makeHttp();
