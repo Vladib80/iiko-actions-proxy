@@ -2,7 +2,10 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import https from 'https';
 
 export function makeHttp(): AxiosInstance {
-  const cfg: AxiosRequestConfig = { timeout: 20000, validateStatus: () => true };
+  const cfg: AxiosRequestConfig = {
+    timeout: 20000,
+    validateStatus: () => true
+  };
   if (process.env.IIKO_TLS_INSECURE === '1') {
     cfg.httpsAgent = new https.Agent({ rejectUnauthorized: false });
   }
