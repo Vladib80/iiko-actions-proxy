@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { makeHttp, ensureBridgeKeyNode } from "../../../lib/http.js";
+import { makeHttp, ensureBridgeKeyNode } from "../../lib/http.js"; // <-- note: ../../
 
 async function getToken(base, login, password) {
   const http = makeHttp();
@@ -30,10 +30,4 @@ export default async function handler(req, res) {
     if (r.status !== 200) {
       return res.status(r.status).json({ error: true, code: "SERVER_ORGS_FAILED", message: "Org list failed", details: String((r.data && JSON.stringify(r.data).slice(0,200)) || r.status) });
     }
-    const arr = Array.isArray(r.data) ? r.data : (r.data?.items || r.data?.rows || []);
-    const orgs = arr.map(o => ({ id: o.id || o.organizationId || o.guid, name: o.name || o.title }));
-    return res.status(200).json({ organizations: orgs });
-  } catch (e) {
-    return res.status(500).json({ error: true, code: "SERVER_ORGS_ERROR", message: "Server request failed", details: String(e?.message || e) });
-  }
-}
+    const arr = Array.isArr
