@@ -3,7 +3,7 @@ import { makeHttp, ensureBridgeKeyNode } from "../../../lib/http.js";
 export default async function handler(req, res) {
   if (!ensureBridgeKeyNode(req, res)) return;
 
-  const base = (process.env.IIKO_CLOUD_BASE_URL || "").replace(/\\/+$/, "");
+  const base = (process.env.IIKO_CLOUD_BASE_URL || "").replace(/\/+$/, "");
   const apiLogin = process.env.IIKO_CLOUD_API_LOGIN || "";
   if (!base || !apiLogin) return res.status(400).json({ error: true, code: "MISSING_ENV", message: "Fill IIKO_CLOUD_* envs" });
 
