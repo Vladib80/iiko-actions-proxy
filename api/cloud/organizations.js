@@ -1,4 +1,4 @@
-import { makeHttp, ensureBridgeKeyNode } from "../../../lib/http.js";
+import { makeHttp, ensureBridgeKeyNode } from "../../lib/http.js"; // <-- note: ../../
 
 export default async function handler(req, res) {
   if (!ensureBridgeKeyNode(req, res)) return;
