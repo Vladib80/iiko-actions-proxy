@@ -1,22 +1,40 @@
 import crypto from "crypto";
-import { makeHttp, ensureBridgeKeyNode } from "../../lib/http.js"; // ← exactly 2 dots
+import axios from "axios";
+import https from "https";
 
+// Minimal local http client so we don't import ../../lib/http.js
+function makeHttp() {
+  const cfg = { timeout: 20000, validateStatus: () => true };
+  if (process.env.IIKO_TLS_INSECURE === "1") {
+    cfg.httpsAgent = new https.Agent({ rejectUnauthorized: false });
+  }
+  return axios.create(cfg);
+}
+
+// Same auth helper as before (hash login#password, then fallback /api/0/auth/access_token)
 async function getToken(base, login, password) {
   const http = makeHttp();
   const pass = crypto.createHash("sha1").update(`${login}#${password}`, "utf8").digest("hex");
 
-  // 1) Classic hashed auth (/resto/api/auth)
   try {
     const r = await http.post(`${base}/resto/api/auth`, null, { params: { login, pass } });
     if (r.status === 200 && typeof r.data === "string" && r.data.trim()) return r.data.trim();
   } catch {}
 
-  // 2) Alternative token endpoint (/api/0/auth/access_token)
   const r2 = await http.post(`${base}/api/0/auth/access_token`, null, { params: { login, password } });
   const token = typeof r2.data === "string" ? r2.data : r2.data?.access_token;
   if (r2.status === 200 && token) return token;
 
   throw new Error(`Auth failed: status=${r2.status} body~=${JSON.stringify(r2.data).slice(0,200)}`);
+}
+
+function ensureBridgeKeyNode(req, res) {
+  const key = req.headers["x-bridge-key"] || req.headers["X-Bridge-Key"];
+  if (!key || key !== process.env.BRIDGE_KEY) {
+    res.status(401).json({ error: true, code: "NO_AUTH", message: "Missing or invalid X-Bridge-Key" });
+    return false;
+  }
+  return true;
 }
 
 export default async function handler(req, res) {
@@ -33,7 +51,7 @@ export default async function handler(req, res) {
     const http = makeHttp();
     const token = await getToken(base, login, password);
 
-    // We’ll try up to 3 known paths; some servers expect header bearer, some query param
+    // Try known variants; some servers accept bearer header, some require token in query
     const tries = [
       { url: `${base}/api/0/organization/list`, params: { access_token: token, request_timeout: 30 }, headers: { Accept: "application/json" } },
       { url: `${base}/resto/api/organization/list`, params: { access_token: token, request_timeout: 30 }, headers: { Accept: "application/json" } },
@@ -52,7 +70,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // If we’re here, all attempts failed — return the last result details, not a crash
     const detail = typeof last?.data === "string" ? last.data.slice(0, 200) : JSON.stringify(last?.data || "").slice(0, 200);
     return res.status(last?.status || 502).json({
       error: true,
